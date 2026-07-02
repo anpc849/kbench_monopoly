@@ -479,6 +479,33 @@ class MonopolyTests(unittest.TestCase):
         second = run_monopoly_game(make_config(max_turns=8))
         self.assertEqual(first["public_history"], second["public_history"])
 
+    def test_starting_player_is_seeded_random_not_always_evaluated_first(self):
+        starts = set()
+        for seed in range(12):
+            result = run_monopoly_game(make_config(seed=seed, max_turns=1))
+            game_start = result["public_history"][0]
+            first_turn = next(
+                event for event in result["public_history"] if event["type"] == "turn_start"
+            )
+            starts.add(game_start["starting_player"])
+            self.assertEqual(game_start["starting_player"], first_turn["player"])
+        self.assertGreater(len(starts), 1)
+
+    def test_randomized_round_start_still_allows_full_turn_cycle(self):
+        selected_seed = None
+        for seed in range(50):
+            result = run_monopoly_game(make_config(seed=seed, max_turns=1))
+            if result["public_history"][0]["starting_seat"] != 0:
+                selected_seed = seed
+                break
+        self.assertIsNotNone(selected_seed)
+
+        result = run_monopoly_game(
+            make_config(seed=selected_seed, max_rounds=1, max_turns=20)
+        )
+        self.assertEqual(result["end_reason"], "max_rounds")
+        self.assertGreaterEqual(result["turns_played"], len(result["players"]))
+
     def test_supported_player_counts_smoke(self):
         for count in (2, 3, 4):
             with self.subTest(count=count):

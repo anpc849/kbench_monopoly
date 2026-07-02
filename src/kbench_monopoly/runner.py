@@ -191,8 +191,14 @@ class MonopolyGame:
         }
 
     def start(self):
-        self._log_event("game_start", players=[p.name for p in self.players])
-        current_player_idx = 0
+        current_player_idx = self.rng.randrange(len(self.players))
+        round_start_idx = current_player_idx
+        self._log_event(
+            "game_start",
+            players=[p.name for p in self.players],
+            starting_player=self.players[current_player_idx].name,
+            starting_seat=current_player_idx,
+        )
         
         while True:
             self._check_stop()
@@ -241,11 +247,11 @@ class MonopolyGame:
                 if current_player.doubles_count == 0 or not current_player.alive or current_player.in_jail:
                     current_player.doubles_count = 0
                     current_player_idx = (current_player_idx + 1) % len(self.players)
-                    if current_player_idx == 0:
+                    if current_player_idx == round_start_idx:
                         self.round_number += 1
             else:
                 current_player_idx = (current_player_idx + 1) % len(self.players)
-                if current_player_idx == 0:
+                if current_player_idx == round_start_idx:
                     self.round_number += 1
 
     def _play_turn(self, player: PlayerState):
