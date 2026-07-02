@@ -582,6 +582,28 @@ class BenchmarkConfigTests(unittest.TestCase):
             ["Research", "Control"],
         )
 
+    def test_benchmark_config_accepts_game_config_overrides(self):
+        config = build_benchmark_config(
+            MockKBench(),
+            MockKBench.llm,
+            opponent_model_ids=["opp1"],
+            max_rounds=1,
+            max_turns=2,
+            enable_auctions=False,
+        )
+        self.assertEqual(config.max_rounds, 1)
+        self.assertEqual(config.max_turns, 2)
+        self.assertFalse(config.enable_auctions)
+
+    def test_benchmark_config_rejects_unknown_game_config_overrides(self):
+        with self.assertRaisesRegex(TypeError, "not_a_config_field"):
+            build_benchmark_config(
+                MockKBench(),
+                MockKBench.llm,
+                opponent_model_ids=["opp1"],
+                not_a_config_field=True,
+            )
+
 
 class DefaultLLMAgentTests(unittest.TestCase):
     def _auction_context(self):

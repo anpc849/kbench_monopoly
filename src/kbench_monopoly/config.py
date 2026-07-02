@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from typing import Any
 
 from faker import Faker
@@ -102,6 +102,7 @@ def build_benchmark_config(
     opponent_model_ids: list[str],
     seed: int | None = None,
     player_names: list[str] | None = None,
+    **config_overrides: Any,
 ) -> GameConfig:
     """Build the default mixed-LLM benchmark configuration.
 
@@ -109,6 +110,22 @@ def build_benchmark_config(
     `kbench.llms` keys supplied by the task author. The task may provide one
     to three opponents, producing a two- to four-player game.
     """
+
+    allowed_overrides = {
+        item.name
+        for item in fields(GameConfig)
+        if item.name
+        not in {
+            "player_configs",
+            "seed",
+            "evaluated_player_name",
+            "opponent_model_ids",
+        }
+    }
+    unknown_overrides = sorted(set(config_overrides) - allowed_overrides)
+    if unknown_overrides:
+        names = ", ".join(unknown_overrides)
+        raise TypeError(f"Unknown GameConfig override(s): {names}.")
 
     if not 1 <= len(opponent_model_ids) <= 3:
         raise ValueError(
@@ -152,6 +169,7 @@ def build_benchmark_config(
         seed=seed,
         evaluated_player_name=resolved_names[0],
         opponent_model_ids=list(opponent_model_ids),
+        **config_overrides,
     )
 
 

@@ -224,16 +224,17 @@ OPPONENT_MODEL_IDS = [
 
 
 @kbench.task(name="kbench-monopoly")
-def kbench_monopoly(llm) -> int:
+def kbench_monopoly(llm) -> bool:
     config = monopoly.build_benchmark_config(
         kbench,
         llm,
         opponent_model_ids=OPPONENT_MODEL_IDS,
         player_names=["Mira", "Theo", "Nora", "Caleb"],
         seed=None,
+        max_rounds=1,
     )
     result = monopoly.run_monopoly_game(game_config=config)
-    return 1 if monopoly.score_evaluated_player(result, config.evaluated_player_name) else 0
+    return True if monopoly.score_evaluated_player(result, config.evaluated_player_name) else False
 ```
 
 `opponent_model_ids` must contain 1 to 3 distinct models. The game supports 2 to
