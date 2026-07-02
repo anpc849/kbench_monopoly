@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kbench-monopoly"
+version = "0.1.0"
+description = "Configurable Monopoly environment for Kaggle Benchmarks LLM agents."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "Faker",
+    "gradio",
+    "pydantic>=1.10",
+]
+
+[project.scripts]
+kbench_monopoly_gradio = "kbench_monopoly.gradio_app:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["kbench_monopoly*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
