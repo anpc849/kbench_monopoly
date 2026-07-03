@@ -585,11 +585,37 @@ class BenchmarkConfigTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             build_benchmark_config(MockKBench(), MockKBench.llm, opponent_model_ids=[])
 
-    def test_benchmark_config_rejects_duplicate_and_missing_opponents(self):
-        with self.assertRaises(RuntimeError):
-            build_benchmark_config(
-                MockKBench(), MockKBench.llm, opponent_model_ids=["opp1", "opp1"]
-            )
+    def test_benchmark_config_allows_duplicate_model_ids(self):
+        config = build_benchmark_config(
+            MockKBench(),
+            MockKBench.llm,
+            opponent_model_ids=["opp1", "opp1"],
+            player_names=["Research", "Control A", "Control B"],
+        )
+        self.assertEqual(
+            [spec["model_id"] for spec in config.player_configs],
+            ["MockLLM", "opp1", "opp1"],
+        )
+
+    def test_benchmark_config_allows_evaluated_model_as_opponent_id(self):
+        evaluated = MockLLM()
+        kbench = type(
+            "KBenchWithEvaluatedModel",
+            (),
+            {"llm": evaluated, "llms": {"same-model": evaluated}},
+        )()
+        config = build_benchmark_config(
+            kbench,
+            evaluated,
+            opponent_model_ids=["same-model"],
+            player_names=["Evaluated Seat", "Mirror Seat"],
+        )
+        self.assertEqual(len(config.player_configs), 2)
+        self.assertIs(config.player_configs[0]["agent"], evaluated)
+        self.assertIs(config.player_configs[1]["agent"], evaluated)
+        self.assertEqual(config.player_configs[1]["model_id"], "same-model")
+
+    def test_benchmark_config_rejects_missing_opponents(self):
         with self.assertRaises(RuntimeError):
             build_benchmark_config(
                 MockKBench(), MockKBench.llm, opponent_model_ids=["missing"]

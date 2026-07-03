@@ -175,7 +175,6 @@ def build_benchmark_config(
 
 def _select_opponent_models(available, evaluated_llm, opponent_model_ids):
     selected = []
-    excluded_names = {_model_name(evaluated_llm)}
 
     for model_id in opponent_model_ids:
         llm = available.get(model_id)
@@ -183,15 +182,8 @@ def _select_opponent_models(available, evaluated_llm, opponent_model_ids):
             raise RuntimeError(
                 f"Opponent model {model_id!r} is not available in kbench.llms."
             )
-        if llm is evaluated_llm or model_id in excluded_names:
-            raise RuntimeError(
-                f"Opponent model {model_id!r} resolves to the evaluated model; "
-                "choose distinct opponent models."
-            )
         selected.append((model_id, llm))
 
-    if len({model_id for model_id, _ in selected}) != len(selected):
-        raise RuntimeError("Opponent model IDs must be distinct values.")
     return selected
 
 
