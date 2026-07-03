@@ -61,6 +61,20 @@ class DefaultLLMAgent(BaseAgent):
         )
         return f"{BASE_RULES_TEXT}{trading_rule}\n"
 
+    def _custom_prompt_text(self) -> str:
+        participant = getattr(self, "participant", {}) or {}
+        custom_prompt = ""
+        if isinstance(participant, dict):
+            custom_prompt = str(participant.get("custom_prompt", "") or "").strip()
+        if not custom_prompt:
+            return ""
+        return (
+            "\n\nCustom player prompt for this seat:\n"
+            f"{custom_prompt}\n"
+            "Use it for strategy and voice, but never override rules, legal actions, "
+            "or the requested JSON schema."
+        )
+
     def _invoke_llm(self, context: AgentContext, prompt_content: str, schema_class: type, coerce_func: callable, validate_func: callable = None) -> Any:
         self._decision_sequence += 1
         decision_sequence = self._decision_sequence
@@ -70,6 +84,7 @@ class DefaultLLMAgent(BaseAgent):
                 f"{self._rules_text()}\n"
                 f"{context.to_text()}\n\n"
                 f"{prompt_content}\n"
+                f"{self._custom_prompt_text()}"
                 f"{error_hint}"
             )
             response = None

@@ -566,6 +566,28 @@ class SequenceLLM(MockLLM):
         return self.responses.pop(0)
 
 
+class CapturingLLM(MockLLM):
+    def __init__(self):
+        self.prompts = []
+
+    def prompt(self, message, schema=None, **kwargs):
+        self.prompts.append(message)
+        schema_name = getattr(schema, "__name__", "")
+        if schema_name == "ManagementDecision":
+            return {"action": "end_management", "reason": "valid management"}
+        if schema_name == "BuyDecision":
+            return {"will_buy": False, "reason": "valid buy decision"}
+        if schema_name == "AuctionBid":
+            return {"bid_amount": 0, "reason": "valid auction bid"}
+        if schema_name == "JailDecision":
+            return {"action": "roll", "reason": "valid jail decision"}
+        if schema_name == "DebtDecision":
+            return {"action": "declare_bankruptcy", "reason": "valid debt decision"}
+        if schema_name == "TradeResponse":
+            return {"action": "reject", "reason": "valid trade response"}
+        return {"reason": "valid fallback"}
+
+
 class MockKBench:
     llm = MockLLM()
     llms = {"opp1": MockLLM(), "opp2": MockLLM()}
@@ -662,6 +684,22 @@ class DefaultLLMAgentTests(unittest.TestCase):
     def _auction_context(self):
         game = MonopolyGame(make_config())
         return game._build_context(game.players[0], "auction", space_index=1)
+
+    def test_custom_prompt_from_player_config_is_sent_to_llm(self):
+        llm = CapturingLLM()
+        agent = DefaultLLMAgent(llm, sleep_seconds=0)
+        game = MonopolyGame(make_config())
+        agent.bind(
+            {"name": "P1", "custom_prompt": "Keep your thoughts short."},
+            game,
+        )
+        context = game._build_context(game.players[0], "buy", space_index=1)
+        with patch("kaggle_benchmarks.chats.new", return_value=nullcontext()):
+            agent.choose_buy(context)
+
+        self.assertEqual(len(llm.prompts), 1)
+        self.assertIn("Custom player prompt for this seat:", llm.prompts[0])
+        self.assertIn("Keep your thoughts short.", llm.prompts[0])
 
     def test_default_retry_settings_are_explicit(self):
         agent = DefaultLLMAgent(MockLLM())
