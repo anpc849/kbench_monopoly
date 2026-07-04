@@ -252,8 +252,8 @@ class AgentContext:
             parts.append(f"- Group {g_id} ({g_name}): {', '.join(g_props)}")
         return "\n".join(parts)
 
-    def to_text(self) -> str:
-        return (
+    def to_text(self, *, include_board_reference: bool = True) -> str:
+        text = (
             f"Player: {self.player_name}\n"
             f"Phase: {self.phase}\n"
             f"Round: {self.round_number} | Turn: {self.turn_number}\n\n"
@@ -270,9 +270,11 @@ class AgentContext:
             f"{self.legal_actions_text()}\n\n"
             f"--- Public History ---\n{self.public_history_text()}\n\n"
             f"--- Your Private Decision History ---\n"
-            f"{self.private_decision_history_text()}\n\n"
-            f"{self.board_reference_text()}"
+            f"{self.private_decision_history_text()}"
         )
+        if include_board_reference:
+            text += f"\n\n{self.board_reference_text()}"
+        return text
 
 
 class BaseAgent:

@@ -701,6 +701,30 @@ class DefaultLLMAgentTests(unittest.TestCase):
         self.assertIn("Custom player prompt for this seat:", llm.prompts[0])
         self.assertIn("Keep your thoughts short.", llm.prompts[0])
 
+    def test_prompt_keeps_stable_sections_before_dynamic_context_for_caching(self):
+        llm = CapturingLLM()
+        agent = DefaultLLMAgent(llm, sleep_seconds=0)
+        game = MonopolyGame(make_config())
+        agent.bind(
+            {"name": "P1", "custom_prompt": "Keep your thoughts short."},
+            game,
+        )
+        context = game._build_context(game.players[0], "buy", space_index=1)
+        with patch("kaggle_benchmarks.chats.new", return_value=nullcontext()):
+            agent.choose_buy(context)
+
+        prompt = llm.prompts[0]
+        dynamic_index = prompt.index("--- Dynamic Decision Context ---")
+        self.assertLess(prompt.index("--- Board Reference ---"), dynamic_index)
+        self.assertLess(prompt.index("--- Decision Instruction ---"), dynamic_index)
+        self.assertLess(
+            prompt.index("You have landed on an unowned property."),
+            dynamic_index,
+        )
+        self.assertLess(prompt.index("Keep your thoughts short."), dynamic_index)
+        self.assertGreater(prompt.index("Round:"), dynamic_index)
+        self.assertEqual(prompt.count("--- Board Reference ---"), 1)
+
     def test_default_retry_settings_are_explicit(self):
         agent = DefaultLLMAgent(MockLLM())
         self.assertEqual(agent.max_retries, 5)

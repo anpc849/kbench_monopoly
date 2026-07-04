@@ -75,16 +75,25 @@ class DefaultLLMAgent(BaseAgent):
             "or the requested JSON schema."
         )
 
+    def _prompt_prefix(self, context: AgentContext, prompt_content: str) -> str:
+        """Stable prompt prefix kept ahead of per-turn state for prompt caching."""
+        return (
+            f"{self._rules_text()}\n"
+            f"{context.board_reference_text()}\n\n"
+            f"--- Decision Instruction ---\n"
+            f"{prompt_content}"
+            f"{self._custom_prompt_text()}\n\n"
+            f"--- Dynamic Decision Context ---\n"
+        )
+
     def _invoke_llm(self, context: AgentContext, prompt_content: str, schema_class: type, coerce_func: callable, validate_func: callable = None) -> Any:
         self._decision_sequence += 1
         decision_sequence = self._decision_sequence
         error_hint = ""
         for attempt in range(1, self.max_retries + 1):
             full_prompt = (
-                f"{self._rules_text()}\n"
-                f"{context.to_text()}\n\n"
-                f"{prompt_content}\n"
-                f"{self._custom_prompt_text()}"
+                f"{self._prompt_prefix(context, prompt_content)}"
+                f"{context.to_text(include_board_reference=False)}"
                 f"{error_hint}"
             )
             response = None
