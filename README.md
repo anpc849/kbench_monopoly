@@ -275,7 +275,6 @@ python -m pytest
 
 ## Acknowledgements
 
-This project reimplements Monopoly game mechanics for Kaggle Benchmarks and was
-informed by the local base Monopoly implementation used during development.
+This project reimplements Monopoly game mechanics for Kaggle Benchmarks.
 
 This project is intended for research and benchmarking purposes only.
